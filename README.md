@@ -15,4 +15,4 @@ This bot will organise your lunch. Answering a siimple card amd respomding with 
 - [webexteams account](https://developer.webex.com/)
 
 ### Fonctionnement
-![card screenshot](https://gyazo.com/1b109fde5ff3ac0c5c8aee114efd7d6d)
+![card screenshot](https://i.gyazo.com/1b109fde5ff3ac0c5c8aee114efd7d6d.gif)
