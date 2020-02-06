@@ -1,11 +1,15 @@
 from webexteamsbot import TeamsBot
 import json
 import requests
+from tinydb import TinyDB, Query
+from datetime import datetime
+
+db= TinyDB('DB/db.json')
 
 bot_token = 'Zjk3NTY0MzgtNjI1Mi00MDE1LWFmODEtYWUwYzRiOGNhNTgzODYwNWI3NWQtNDE1_PF84_1eb65fdf-9643-417f-9974-ad72cae0e10f'
 bot_name = 'poppy'
 bot_email = 'poppybot@webex.bot'
-bot_url = 'https://0b08d2b3.ngrok.io'
+bot_url = 'https://f957cf12.ngrok.io'
 bot = TeamsBot(
     bot_name,
     teams_bot_token=bot_token,
@@ -84,7 +88,17 @@ def attachment (api, message):
     }
     url = 'https://api.ciscospark.com/v1/attachment/actions/'+message['data']['id']
     get = requests.get(url, headers=header)
-    return "id: {} answer :{}".format(get_person_details(get.json()['personId']),get.json()['inputs'])
+    inputs = get.json()['inputs']
+    db.insert({
+	"date": datetime.now().timetuple().tm_yday,
+	"user": get_person_details(get.json()['personId']),
+	"userId": get.json()['personId'],
+	"userAction": inputs['x'],
+	"lunchtime": inputs ['lunch'],
+	"roomId": get.json()['roomId'],
+    })
+    return ""
+    #return "id: {} answer :{}".format(get_person_details(get.json()['personId']),get.json()['inputs'])
 
 def get_person_details (id):
     url = 'https://api.ciscospark.com/v1/people/' +id
@@ -93,7 +107,7 @@ def get_person_details (id):
         'authorization': 'Bearer ' + bot_token
     }
     get = requests.get(url, headers=header)
-    return 'displayName {}'.format(get.json()['displayName'])
+    return '{}'.format(get.json()['displayName'])
 
 def create_message_with_attachment(rid, msgtxt, attachment):
     headers = {
@@ -109,18 +123,43 @@ def create_message_with_attachment(rid, msgtxt, attachment):
 def hello (incommingmessage):
     return 'hello world'
 
-def who (message):
+def eat (message):
     #print(message.text)
     card = create_message_with_attachment(message.roomId,'test',attachment = json.loads(lunch_card))
     print (card)
     return ''
 
+def who (message):
+    Lunch = Query()
+    result = db.search((Lunch.date==datetime.now().timetuple().tm_yday) & (Lunch.userAction=='lunch'))
+    lunchtime = {}
+
+    for person in result :
+        for time in person["lunchtime"].split(","):
+            if time in lunchtime:
+                if not (person["user"] in lunchtime[time]):
+                    lunchtime[time].append(person["user"])
+            else:
+                lunchtime[time]=[person["user"]]
+    answer = ""
+    for item in lunchtime :
+        if len(lunchtime[item])>1:
+            user = ", ".join(lunchtime[item])
+            answer += "{} want to eat at {}h{} \n".format(user,item[0:2],item[2:])
+        else:
+            user = lunchtime[item][0]
+            answer += "{} wants to eat at {}h{} \n".format(user,item[0:2],item[2:])
+      
+    Lunch = Query()
+    result = db.search((Lunch.date==str(datetime.now().timetuple().tm_yday)) & (Lunch.userAction=='no'))
+    
+    return answer
 
 bot.add_command('attachmentActions','*',attachment)
 
-bot.add_command ('who','I will organise lunch',who)
+bot.add_command ("eat",'I will organise lunch',eat)
 bot.add_command ('/hello','hello world',hello)
-
+bot.add_command ('who','users eat', who)
 
 
 
